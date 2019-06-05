@@ -1,0 +1,30 @@
+#!/bin/bash
+
+CDIR=$(pwd -P)
+DIR=$(cd $(dirname $0); pwd -P)
+
+function usage {
+    echo "USAGE: $(basename $0) (pdf|docx|...) file [title] [subtitle]"
+    exit 1
+}
+
+if [ $# -lt 2 ]; then
+    usage
+fi
+
+FORMAT="$1"
+FILE="$2"
+TITLE="$3"
+SUBTITLE="$4"
+FILE_NAME_ONLY="${FILE%.*}"
+TODAY=$(date +%Y-%m-%d)
+
+if [ "$SUBTITLE" == "" ]; then
+    SUBTITLE=$(cat ${FILE} | grep "^# " | head -1 | sed -E 's,^# ,,')
+fi
+
+cd ${DIR}
+sed -Ei '' "s/(\\\\newcommand{\\\\cTitle}){[^}]*}/\\1{${TITLE}}/g" docinfo.tex
+sed -Ei '' "s/(\\\\newcommand{\\\\cSubtitle}){[^}]*}/\\1{${SUBTITLE}}/g" docinfo.tex
+sed -Ei '' "s/(\\\\newcommand{\\\\cCreationdate}){[^}]*}/\\1{${TODAY}}/g" docinfo.tex
+pandoc --template=default.tex --pdf-engine=xelatex -s -o ${CDIR}/${FILE_NAME_ONLY}.${FORMAT} ${CDIR}/${FILE}
